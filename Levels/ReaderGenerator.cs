@@ -15,26 +15,29 @@ public class ReaderGenerator : IMapGenerator {
     }
 
     public void GenerateLevel(Level level) {
+        GameLogger.LogMessage($"Processing file {this.filePath}", "ReaderGenerator");
         var levelAsset = Resources.Load(this.filePath, typeof(TextAsset)) as TextAsset;
+
         try {
             if (levelAsset == null) {
+                GameLogger.LogMessage("Opening custom level", "ReaderGenerator");
                 using (var file = new BinaryReader(File.Open(this.filePath, FileMode.Open))) {
                     this.ProcessFile(file, level);
                 }
             } else {
+                GameLogger.LogMessage("Opening standart level", "ReaderGenerator");
                 using (var file = new BinaryReader(new MemoryStream(levelAsset.bytes))) {
                     this.ProcessFile(file, level);
                 }
             }
         } catch {
-            Debug.LogError($"Incorrect input file");
+            GameLogger.LogError($"Incorrect input file", "ReaderGenerator");
             level.width = Level.MinWidth;
             level.height = Level.MinHeight;
-            level.objectMap = new List<List<MapObject>>();
+            level.objectMap = new MapObject[level.height, level.width];
             for (int i = 0; i < level.height; i++) {
-                level.objectMap.Add(new List<MapObject>());
                 for (int j = 0; j < level.width; j++) {
-                    level.objectMap[i].Add(MapObject.Floor);
+                    level.objectMap[i, j] = MapObject.Floor;
                 }
             }
         }
@@ -72,14 +75,13 @@ public class ReaderGenerator : IMapGenerator {
         level.width = file.ReadInt32();
         level.height = file.ReadInt32();
 
-        Debug.Log("Size: " + level.width + " " + level.height);
+        GameLogger.LogMessage("Size: " + level.width + " " + level.height, "ReaderGenerator");
         file.ReadByte();
 
-        level.objectMap = new List<List<MapObject>>();
+        level.objectMap = new MapObject[level.height, level.width];
         for (int i = 0; i < level.height; i++) {
-            level.objectMap.Add(new List<MapObject>());
             for (int j = 0; j < level.width; j++) {
-                level.objectMap[i].Add((MapObject)file.ReadInt32());
+                level.objectMap[i, j] = (MapObject)file.ReadInt32();
             }
         }
     }

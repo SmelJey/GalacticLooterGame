@@ -9,7 +9,7 @@ public class ToolButton : MonoBehaviour, IPointerClickHandler {
     public Level.MapObject brushAlias;
 
     public void OnPointerClick(PointerEventData eventData) {
-        Debug.Log($"Brush click is {this.brushAlias}");
+        GameLogger.LogMessage($"Brush click is {this.brushAlias}", "ToolButton");
         this.editorManager.SelectBrush(this.brushAlias);
     }
 }

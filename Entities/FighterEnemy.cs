@@ -38,6 +38,7 @@ public sealed class FighterEnemy : Enemy {
     /// Coroutine for shooting with ShotCD.
     /// </summary>
     private IEnumerator Shoot(float cooldown) {
+        GameManager.instance.audioManager.PlaySound("enemyShot");
         Bullet.Instantiate(this.bullet, this.firepoint.transform, this.gameObject, this.bulletDmg, this.bulletSpeed);
         yield return new WaitForSeconds(cooldown);
         this.currentAction = null;

@@ -74,7 +74,6 @@ public sealed class BossEnemy : Enemy {
 
         if (this.currentAction == null) {
             if (this.isSalvoReady && Random.value < this.salvoChance) {
-                Debug.Log(Vector2.Distance(this.transform.position, GameManager.instance.playerInstance.transform.position));
                 if (Vector2.Distance(this.transform.position, GameManager.instance.playerInstance.transform.position) < 8f) {
                     this.StartCoroutine(this.Salvo(5, 0));
                 } else {

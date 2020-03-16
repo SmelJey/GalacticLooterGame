@@ -18,10 +18,12 @@ public class MenuController : MonoBehaviour {
     private int editorWidth = 50;
 
     public void StartButton() {
+        GameLogger.LogMessage("Start called", "MenuController");
         GameManager.RestartGame(null);
     }
 
     public void ExitButton() {
+        GameLogger.LogMessage("Exit called", "MenuController");
         Application.Quit();
     }
 
@@ -30,10 +32,12 @@ public class MenuController : MonoBehaviour {
     }
 
     public void EditorButton() {
+        GameLogger.LogMessage("Editor called", "MenuController");
         this.editorContextMenu.gameObject.SetActive(true);
     }
 
     public void EditorCancel() {
+        GameLogger.LogMessage("Editr canceled", "MenuController");
         this.editorContextMenu.gameObject.SetActive(false);
     }
 
@@ -71,7 +75,7 @@ public class MenuController : MonoBehaviour {
 
     private IEnumerator EditorShowFileDialog() {
         yield return FileBrowser.WaitForLoadDialog(false, Utility.levelDirectory, "Choose level to edit", "Choose");
-        Debug.Log(FileBrowser.Success + " " + FileBrowser.Result);
+        GameLogger.LogMessage("EditorBrowser: " + FileBrowser.Success + " " + FileBrowser.Result, "MenuController");
         if (FileBrowser.Success) {
             EditorManager.StartEditor(new ReaderGenerator(FileBrowser.Result.Replace("\\", "/")));
         }
@@ -79,13 +83,19 @@ public class MenuController : MonoBehaviour {
 
     private IEnumerator LoadLevelShowFileDialog() {
         yield return FileBrowser.WaitForLoadDialog(false, Utility.levelDirectory, "Choose level to load", "Choose");
-        Debug.Log(FileBrowser.Success + " " + FileBrowser.Result);
+        GameLogger.LogMessage("LoaderBrowser: " + FileBrowser.Success + " " + FileBrowser.Result, "MenuController");
         if (FileBrowser.Success) {
             GameManager.RestartGame(new ReaderGenerator(FileBrowser.Result.Replace("\\", "/")));
         }
     }
 
     private void Awake() {
+        if (!GameLogger.isActive) {
+            GameLogger.LoggerInit();
+        }
+        
+        Application.quitting += () => { GameLogger.LoggerClose(); };
+
         this.editorContextMenu.gameObject.SetActive(false);
         FileBrowser.SetFilters(true, new FileBrowser.Filter("Binary levels", ".bytes"));
         FileBrowser.SetDefaultFilter(".bytes");
@@ -96,8 +106,10 @@ public class MenuController : MonoBehaviour {
     private void Update() {
         if (Keyboard.current.f9Key.wasPressedThisFrame) {
             GameManager.isDeveloperMode = true;
+            GameLogger.LogMessage("Developer mode entered", "MenuController");
         } else if (Keyboard.current.f10Key.wasPressedThisFrame) {
             GameManager.isDeveloperMode = false;
+            GameLogger.LogMessage("Developer mode exited", "MenuController");
         }
     }
 

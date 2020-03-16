@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour {
     public static bool isDeveloperMode = false;
 
     public LevelManager levelManager;
+    public AudioManager audioManager;
     public GameState gameState = GameState.NOT_LOADED;
     public Player playerInstance;
     public BossEnemy boss = null;
@@ -42,17 +43,19 @@ public class GameManager : MonoBehaviour {
     }
 
     public static void TutorialStart() {
-        Debug.LogError("Tutorial is not implemented yet");
+        GameLogger.LogMessage("Tutorial start", "Tutorial");
     }
 
     public static void RestartGame(IMapGenerator generator) {
+        GameLogger.LogMessage("Game restart", "GameManager");
+
         GameManager.customLevel = generator;
 
         if (GameManager.instance != null) {
             GameManager.instance.gameState = GameState.NOT_LOADED;
             GameManager.instance.currentLevelNumber = 1;
             GameManager.instance.upgradeManager.ResetUpgrades();
-            Debug.Log("GM set");
+            GameLogger.LogMessage("GameManager instantiated", "GameManager");
         }
 
         LoadingScreen.StartLoading();
@@ -66,6 +69,8 @@ public class GameManager : MonoBehaviour {
         if (GameManager.instance == null || GameManager.instance.playerInstance == null || !GameManager.isDeveloperMode) {
             return;
         }
+
+        GameLogger.LogMessage($"Player used command {cmd}", "Console");
 
         switch (cmd) {
             case "/power_overwhelming": {
@@ -100,7 +105,7 @@ public class GameManager : MonoBehaviour {
     }
 
     public void Awake() {
-        Debug.Log("Awake status: " + (this.gameState != GameState.NOT_LOADED));
+        GameLogger.LogMessage("Awake status: " + this.gameState.ToString(), "GameManager");
         if (this.gameState != GameState.NOT_LOADED) {
             return;
         }
@@ -109,20 +114,29 @@ public class GameManager : MonoBehaviour {
 
         Time.timeScale = 0;
         this.gameState = GameState.SHOPPING;
+
+        if (this.currentLevelNumber == 1) {
+            GameLogger.LogMessage("First level, skipping shopping stage", "GameManager");
+            this.gameState = GameState.PLAYING;
+            Time.timeScale = 1;
+        }
+
         if (GameManager.instance == null) {
+            GameLogger.LogMessage("GameManager singleton instantiated", "GameManager");
             GameManager.instance = this;
         } else if (GameManager.instance != this) {
+            GameLogger.LogMessage("GameManager already exists, deleting this", "GameManager");
             MonoBehaviour.Destroy(this.gameObject);
         }
 
-        Debug.Log("Awake level " + this.currentLevelNumber);
+        GameLogger.LogMessage("Current level is " + this.currentLevelNumber, "GameManager");
 
         MonoBehaviour.DontDestroyOnLoad(this.gameObject);
         this.levelManager = this.GetComponent<LevelManager>();
+        this.audioManager = this.GetComponent<AudioManager>();
 
         this.StartCoroutine(this.StartGame());
-        Debug.Log("Awake ended");
-        Debug.Log(this.gameState);
+        GameLogger.LogMessage($"Awake ended with state {this.gameState.ToString()}", "GameManager");
     }
 
     public void NextLevel() {
@@ -140,13 +154,14 @@ public class GameManager : MonoBehaviour {
     }
 
     public void GameOver() {
-        Debug.Log("GG");
+        GameLogger.LogMessage("Game over", "GameManager");
         this.gameState = GameState.GAME_OVER;
 
         Time.timeScale = 0;
     }
 
     private IEnumerator StartGame() {
+        GameLogger.LogMessage("StartGame called", "GameManager");
         this.StartCoroutine(this.CheckLoading());
         this.levelManager.SetupScene(this.currentLevelNumber, GameManager.customLevel);
         this.playerInstance = MonoBehaviour.FindObjectOfType<Player>();
@@ -159,8 +174,9 @@ public class GameManager : MonoBehaviour {
     private IEnumerator CheckLoading() {
         yield return new WaitForSeconds(60);
         if (this.gameState == GameState.NOT_LOADED) {
+            GameLogger.LogError("Loading took too much time", "GameManager");
             Application.Quit();
-            throw new Exception("loading took too much time");
+            
         }
     }
 }

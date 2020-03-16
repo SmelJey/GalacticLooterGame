@@ -34,6 +34,17 @@ public abstract class Entity : MonoBehaviour, IHittable {
     private float teleportCooldown = 1f;
     private bool canTeleport = true;
 
+    public virtual void CloneStats(Entity original) {
+        this.maxHp = original.maxHp;
+        this.maxShield = original.maxShield;
+        this.hp = original.hp;
+        this.shield = original.shield;
+        this.shieldRegeneration = original.shieldRegeneration;
+        this.shieldRenegerationDelay = original.shieldRenegerationDelay;
+        this.maxSpeed = original.maxSpeed;
+        this.force = original.force;
+    }
+
     public virtual void Teleport(GameObject destination) {
         if (this.canTeleport) {
             this.StartCoroutine(this.TeleportCooldown());
@@ -51,6 +62,11 @@ public abstract class Entity : MonoBehaviour, IHittable {
             this.shield -= Mathf.Min(dmg, this.shield);
             float knockbackCoef = (float)dmg / (this.maxShield + this.maxHp);
             this.rigidBody.AddForce(hitter.transform.right * knockbackCoef * 100);
+
+            if (this.shield == 0) {
+                particleLauncher.Emit(50);
+            }
+
         } else {
             this.hp -= dmg;
             this.CheckDeath();
@@ -108,6 +124,7 @@ public abstract class Entity : MonoBehaviour, IHittable {
 
     protected virtual void CheckDeath() {
         if (this.hp <= 0) {
+            GameLogger.LogMessage($"Entity {this.name} died on {this.transform.position}", "Entity");
             MonoBehaviour.Destroy(this.gameObject);
             return;
         }

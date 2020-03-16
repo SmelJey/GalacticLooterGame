@@ -31,6 +31,11 @@ public sealed class Portal : MonoBehaviour {
                 portalComp.portalOut = this.gameObject;
             }
         }
+
+        if (this.portalOut != null) {
+            GameLogger.LogMessage($"Portal of color {color} on {this.transform.position} and {outObject.transform.position} are connected", "Portal");
+        }
+        
     }
 
     private void OnTriggerEnter2D(Collider2D col) {

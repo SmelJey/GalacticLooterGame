@@ -15,6 +15,7 @@ public abstract class Enemy : Entity {
 
     private List<Vector2Int> path;
     private int currentWaypoint;
+    private bool checking = false;
 
     protected virtual void MoveToPlayer() {
         if (this.path == null || this.currentWaypoint >= this.path.Count) {
@@ -24,6 +25,11 @@ public abstract class Enemy : Entity {
         Utility.Rotate(this.gameObject, this.path[this.currentWaypoint]);
         Vector2 dir = (this.path[this.currentWaypoint] - this.rigidBody.position).normalized;
         this.Move(dir);
+
+        if (!this.checking) {
+            StartCoroutine(CheckStuck());
+        }
+       
 
 #if DEBUG
         for (int i = 0; i < this.path.Count - 1; i++) {
@@ -91,5 +97,28 @@ public abstract class Enemy : Entity {
             this.detectionRange += this.detectionRangeExpanding;
             yield return new WaitForSeconds(delayBeforeExpand);
         }
+    }
+
+    private IEnumerator CheckStuck() {
+        this.checking = true;
+        Vector2 startPos = this.transform.position;
+        int waypoint = this.currentWaypoint;
+
+        yield return new WaitForSeconds(1);
+        float cachedForce = this.force;
+        int tries = 0;
+        int maxTries = Random.Range(2, 7);
+
+        while (this.path != null && this.currentWaypoint == waypoint && Vector2.Distance(startPos, this.transform.position) < 0.5 && tries < maxTries) {
+            startPos = this.transform.position;
+            waypoint = this.currentWaypoint;
+            this.force = 0;
+            tries++;
+
+            yield return new WaitForSeconds(2);
+        }
+
+        this.force = cachedForce;
+        this.checking = false;
     }
 }

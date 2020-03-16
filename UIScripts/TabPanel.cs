@@ -30,6 +30,8 @@ public class TabPanel : MonoBehaviour {
         for (int i = 0; i < this.pages.Count; i++) {
             this.pages[i].SetActive(i == index);
         }
+
+        GameLogger.LogMessage($"Selected tab {this.pages[index].name}", "TabPanel");
     }
 
     public void OnTabEnter(TabButton tab) {

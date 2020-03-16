@@ -39,7 +39,7 @@ public class Blockage : MonoBehaviour, IHittable {
             }
 
             GameManager.instance.levelManager.currentLevel
-                .objectMap[Mathf.RoundToInt(this.transform.position.y)][Mathf.RoundToInt(this.transform.position.x)] = MapObject.Floor;
+                .objectMap[Mathf.RoundToInt(this.transform.position.y), Mathf.RoundToInt(this.transform.position.x)] = MapObject.Floor;
             MonoBehaviour.Destroy(this.gameObject);
         } else {
             this.spriteRenderer.sprite = this.dmgSprites[this.GetSprite()];

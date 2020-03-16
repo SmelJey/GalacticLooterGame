@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering.Universal;
 using UnityEngine.InputSystem;
 
 /// <summary>
@@ -8,6 +9,7 @@ using UnityEngine.InputSystem;
 public sealed class Player : Entity, PlayerInput.IPlayerActions {
     public GameObject firepoint;
     public GameObject bullet;
+    public Light2D flashlight;
 
     /// <summary>
     /// Maximum fire rate.
@@ -52,6 +54,26 @@ public sealed class Player : Entity, PlayerInput.IPlayerActions {
     private Vector2 movement;
 
     private PlayerInput controls;
+
+    private SpriteRenderer sr;
+
+    public void CloneStats(Player player) {
+        base.CloneStats(player);
+
+        this.minShotCD = player.minShotCD;
+        this.money = player.money;
+        this.bulletSpeed = player.bulletSpeed;
+        this.bulletDmg = player.bulletDmg;
+        this.heatingCdInc = player.heatingCdInc;
+        this.coolingCdDec = player.coolingCdDec;
+        this.maxShotCd = player.maxShotCd;
+        this.maxEnergy = player.maxEnergy;
+        this.energyRechargeDelay = player.energyRechargeDelay;
+        this.energyRechargeRate = player.energyRechargeRate;
+        this.energyPerShot = player.energyPerShot;
+        this.jumpCost = player.jumpCost;
+        this.jumpVelocity = player.jumpVelocity;
+    }
 
     public void OnMovement(InputAction.CallbackContext context) {
         this.movement = context.ReadValue<Vector2>();
@@ -107,12 +129,20 @@ public sealed class Player : Entity, PlayerInput.IPlayerActions {
 
     protected override void Update() {
         base.Update();
-        if (this.controls.Player.Shoot.ReadValue<float>() > 0 && GameManager.instance.gameState == GameManager.GameState.PLAYING && this.currentAction == null) {
+        if (this.controls.Player.Shoot.ReadValue<float>() > 0 && GameManager.instance != null && GameManager.instance.gameState == GameManager.GameState.PLAYING && this.currentAction == null) {
             this.currentAction = this.StartCoroutine(this.Shoot());
+        }
+
+        if (this.flashlight.intensity < 1) {
+            this.flashlight.intensity = 0.5f + this.energy / (2 * this.maxEnergy);
         }
     }
 
     protected override void Move(Vector2 direction) {
+        if (this.energy < this.maxEnergy * 0.3f) {
+            this.flashlight.intensity = 0.5f + this.energy / ( 2 * this.maxEnergy);
+        }
+
         if (this.isJump) {
             this.rigidBody.velocity = this.transform.right * this.jumpVelocity;
             return;
@@ -156,6 +186,8 @@ public sealed class Player : Entity, PlayerInput.IPlayerActions {
 
             if (this.currentAction == null) {
                 this.currentShotCD = Mathf.Max(this.minShotCD, this.currentShotCD - this.coolingCdDec);
+                float clr = (this.maxShotCd - this.currentShotCD) / (this.maxShotCd - this.minShotCD);
+                this.sr.color = new Color(1, clr, clr);
             }
 
             yield return new WaitForSeconds(cooldown);
@@ -163,9 +195,12 @@ public sealed class Player : Entity, PlayerInput.IPlayerActions {
     }
 
     private void Awake() {
+        GameLogger.LogMessage("Player awake", "Player");
         this.controls = new PlayerInput();
         this.controls.Player.SetCallbacks(this);
         this.currentShotCD = this.minShotCD;
+
+        sr = this.GetComponent<SpriteRenderer>();
     }
 
     private void FixedUpdate() {
@@ -174,6 +209,12 @@ public sealed class Player : Entity, PlayerInput.IPlayerActions {
 
     private IEnumerator Shoot() {
         Bullet.Instantiate(this.bullet, this.firepoint.transform, this.gameObject, this.bulletDmg, this.bulletSpeed);
+        GameManager.instance.audioManager.PlaySound("shot");
+
+        if (this.currentShotCD >= this.minShotCD + (this.maxShotCd - this.minShotCD) / 5) {
+            float clr = (this.maxShotCd - this.currentShotCD) / (this.maxShotCd - this.minShotCD);
+            this.sr.color = new Color(1, clr, clr);
+        }
 
         yield return new WaitForSeconds(this.currentShotCD);
         this.currentShotCD = Mathf.Min(this.maxShotCd, this.currentShotCD + this.heatingCdInc);

@@ -12,7 +12,7 @@ public class EmptyGenerator : IMapGenerator {
     public EmptyGenerator(int levelWidth, int levelHeight) {
         this.width = levelWidth + Level.BorderSize * 2;
         this.height = levelHeight + Level.BorderSize * 2;
-        Debug.Log(this.width + " " + this.height);
+        GameLogger.LogMessage($"Generator params: {this.width} x {this.height}", "EmptyGenerator");
     }
 
     public void GenerateLevel(Level level) {
@@ -20,7 +20,7 @@ public class EmptyGenerator : IMapGenerator {
         level.height = this.height;
 
         if (level.height < Level.MinHeight || level.width < Level.MinWidth) {
-            Debug.LogError("Level is too small");
+            GameLogger.LogError("Level is too small", "EmptyGenerator");
             level.height = Level.MinHeight;
             level.width = Level.MinWidth;
         }
@@ -28,14 +28,13 @@ public class EmptyGenerator : IMapGenerator {
         level.width = this.width;
         level.height = this.height;
 
-        level.objectMap = new List<List<MapObject>>();
+        level.objectMap = new MapObject[height, width];
         for (int i = 0; i < level.height; i++) {
-            level.objectMap.Add(new List<MapObject>());
             for (int j = 0; j < level.width; j++) {
                 if (i < Level.BorderSize || i >= level.height - Level.BorderSize || j < Level.BorderSize || j >= level.width - Level.BorderSize) {
-                    level.objectMap[i].Add(MapObject.Wall);
+                    level.objectMap[i, j] = MapObject.Wall;
                 } else {
-                    level.objectMap[i].Add(MapObject.Floor);
+                    level.objectMap[i, j] = MapObject.Floor;
                 }
             }
         }
@@ -58,6 +57,6 @@ public class EmptyGenerator : IMapGenerator {
     }
 
     public void SetPlayerPosition(Level level) {
-        level.objectMap[Level.BorderSize][Level.BorderSize] = MapObject.Player;
+        level.objectMap[Level.BorderSize, Level.BorderSize] = MapObject.Player;
     }
 }
