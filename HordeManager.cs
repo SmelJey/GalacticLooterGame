@@ -19,7 +19,8 @@ public class HordeManager : MonoBehaviour {
 
     private void Start() {
         if (this.hordeEntities.Length != this.entitiesCounts.Length || this.entitiesCounts.Length != this.dCounts.Length) {
-            throw new System.Exception("Arrays have different lengths");
+            GameLogger.LogError("Arrays have different lengths", "HordeManager");
+            return;
         }
 
         if (GameManager.instance.currentLevelNumber == 5) {

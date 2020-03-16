@@ -27,15 +27,18 @@ public class GameMenuController : MonoBehaviour {
     public void RestartGame() {
         Destroy(GameManager.instance.gameObject);
         GameManager.instance = null;
+        GameLogger.LogMessage("Restart called", "GameMenuController");
         GameManager.RestartGame(GameManager.customLevel);
     }
 
     public void ExitGame() {
         Destroy(GameManager.instance.gameObject);
+        GameLogger.LogMessage("ExitGame called", "GameMenuController");
         SceneManager.LoadScene(0);
     }
 
     public void ContinueGame() {
+        GameLogger.LogMessage("Continue called", "GameMenuController");
         GameManager.instance.gameState = GameManager.GameState.PLAYING;
         GameManager.ProcessCommand(this.console.text);
         this.console.gameObject.SetActive(false);

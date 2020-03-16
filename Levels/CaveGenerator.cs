@@ -18,13 +18,15 @@ public sealed class CaveGenerator : IMapGenerator {
             Random.InitState(seed);
         }
 
-        Debug.Log("Random state is " + Random.state);
+        GameLogger.LogMessage("Random state is " + Random.state, "CaveGenerator");
 
         this.width = levelWidth + Level.BorderSize * 2;
         this.height = levelHeight + Level.BorderSize * 2;
     }
 
     public void GenerateLevel(Level level) {
+        GameLogger.LogMessage("CaveGeneration started", "CaveGenerator");
+
         level.width = this.width;
         level.height = this.height;
         this.CellularAutomatonGeneration(level);
@@ -50,7 +52,7 @@ public sealed class CaveGenerator : IMapGenerator {
                     int neighbours;
                     do {
                         if (attempts > 500) {
-                            Debug.Log("Too many attempts to spawn ore");
+                            GameLogger.LogError($"Too many attempts to spawn ore {ore}", "CaveGenerator");
                             return;
                         }
 
@@ -59,11 +61,11 @@ public sealed class CaveGenerator : IMapGenerator {
                         y = (int)(Random.value * (level.height - 2)) + 1;
                         attempts++;
                         for (int k = 0; k < 8; k++) {
-                            if (level.objectMap[y + Utility.Dy[k]][x + Utility.Dx[k]] == MapObject.Wall) {
+                            if (level.objectMap[y + Utility.Dy[k], x + Utility.Dx[k]] == MapObject.Wall) {
                                 neighbours++;
                             }
                         }
-                    } while (level.objectMap[y][x] != MapObject.Floor || neighbours < 3);
+                    } while (level.objectMap[y, x] != MapObject.Floor || neighbours < 3);
                 }
 
                 oreCounts[ore] -= this.VeinPlacement(level, x, y, ores[ore], Mathf.Min(oreCounts[ore], maxPerVein), chunkChances[ore]);
@@ -87,7 +89,7 @@ public sealed class CaveGenerator : IMapGenerator {
         }
 
         level.playerStart = pos;
-        level.objectMap[pos.y][pos.x] = MapObject.Player;
+        level.objectMap[pos.y, pos.x] = MapObject.Player;
     }
 
     public void SetExitPosition(Level level) {
@@ -101,7 +103,7 @@ public sealed class CaveGenerator : IMapGenerator {
             pos = this.SelectPosition(spawnChance, (int x, int width) => { return width - x - 1; }, (int y, int height) => { return y; }, level);
         }
 
-        level.objectMap[pos.y][pos.x] = MapObject.Exit;
+        level.objectMap[pos.y, pos.x] = MapObject.Exit;
     }
 
     public void PlaceSpawners(Level level, MapObject[] spawners, int[] counts) {
@@ -111,26 +113,27 @@ public sealed class CaveGenerator : IMapGenerator {
                 int x = Random.Range(0, level.width);
                 int tries = 0;
 
-                while (level.objectMap[y][x] != MapObject.Floor) {
+                while (level.objectMap[y, x] != MapObject.Floor) {
                     y = Random.Range(0, level.height);
-                    x = Random.Range(0, level.width);
+                    x = Random.Range(0, level.width);   
                     tries++;
                     if (tries > 100) {
-                        Debug.LogError("Invalid map, too many tries to emplace spawner");
+                        GameLogger.LogError($"Invalid map, too many tries to emplace spawner of type {spawner}", "CaveGenerator");
+                        return;
                     }
                 }
 
-                level.objectMap[y][x] = spawners[spawner];
+                level.objectMap[y, x] = spawners[spawner];
             }
         }
     }
 
     private int VeinPlacement(Level level, int x, int y, MapObject veinType, int maxCount, float expandingChance) {
         int placed = 0;
-        level.objectMap[y][x] = veinType;
+        level.objectMap[y, x] = veinType;
         placed++;
         for (int k = 1; k < 8; k += 2) {
-            if (level.objectMap[y + Utility.Dy[k]][x + Utility.Dx[k]] == MapObject.Floor && Random.value < expandingChance && placed < maxCount) {
+            if (level.objectMap[y + Utility.Dy[k], x + Utility.Dx[k]] == MapObject.Floor && Random.value < expandingChance && placed < maxCount) {
                 placed += this.VeinPlacement(level, x + Utility.Dx[k], y + Utility.Dy[k], veinType, maxCount - placed, expandingChance);
             }
         }
@@ -143,7 +146,7 @@ public sealed class CaveGenerator : IMapGenerator {
         for (int i = 0; i < level.height; i++) {
             buffer.Add(new List<byte>());
             for (int j = 0; j < level.width; j++) {
-                if (level.objectMap[i][j] == MapObject.Wall) {
+                if (level.objectMap[i, j] == MapObject.Wall) {
                     buffer[i].Add(2);
                 } else {
                     buffer[i].Add(0);
@@ -162,7 +165,7 @@ public sealed class CaveGenerator : IMapGenerator {
             var top = searchQueue.Dequeue();
             for (int k = 1; k < 8; k += 2) {
                 var searchNode = new Vector2Int(top.x + Utility.Dx[k], top.y + Utility.Dy[k]);
-                if (level.objectMap[searchNode.y][searchNode.x] != MapObject.Wall
+                if (level.objectMap[searchNode.y, searchNode.x] != MapObject.Wall
                         && buffer[searchNode.y][searchNode.x] == 0) {
                     searchQueue.Enqueue(searchNode);
                     buffer[searchNode.y][searchNode.x] = 1;
@@ -209,7 +212,7 @@ public sealed class CaveGenerator : IMapGenerator {
             for (int i = 0; i < level.height; i++) {
                 int x = xTransformer(j, level.width);
                 int y = yTransformer(i, level.height);
-                if (level.objectMap[y][x] == MapObject.Floor && Random.value < selectionChance) {
+                if (level.objectMap[y, x] == MapObject.Floor && Random.value < selectionChance) {
                     return new Vector2Int(x, y);
                 }
             }
@@ -219,13 +222,13 @@ public sealed class CaveGenerator : IMapGenerator {
             for (int i = 0; i < level.height; i++) {
                 int x = xTransformer(j, level.width);
                 int y = yTransformer(i, level.height);
-                if (level.objectMap[y][x] == MapObject.Floor) {
+                if (level.objectMap[y, x] == MapObject.Floor) {
                     return new Vector2Int(x, y);
                 }
             }
         }
 
-        Debug.LogError("Cant set position");
+        GameLogger.LogError("Can't select position", "CaveGenerator");
         return Vector2Int.one;
     }
 
@@ -234,7 +237,7 @@ public sealed class CaveGenerator : IMapGenerator {
     /// </summary>
     private void CellularAutomatonGeneration(Level level) {
         if (level.height < Level.MinHeight || level.width < Level.MinWidth) {
-            Debug.LogError("Level is too small");
+            GameLogger.LogError("Level is too small", "CaveGenerator");
             level.height = Level.MinHeight;
             level.width = Level.MinWidth;
         }
@@ -243,19 +246,18 @@ public sealed class CaveGenerator : IMapGenerator {
         const float initRate = 0.5f;
 
         // Initialization
-        level.objectMap = new List<List<MapObject>>();
+        level.objectMap = new MapObject[level.height, level.width];
         for (int i = 0; i < level.height; i++) {
-            level.objectMap.Add(new List<MapObject>());
             for (int j = 0; j < level.width; j++) {
                 if (i < Level.BorderSize || i >= level.height - Level.BorderSize || j < Level.BorderSize || j >= level.width - Level.BorderSize) {
-                    level.objectMap[i].Add(MapObject.Wall);
+                    level.objectMap[i, j] = MapObject.Wall;
                     continue;
                 }
 
                 if (Random.value < initRate) {
-                    level.objectMap[i].Add(MapObject.Wall);
+                    level.objectMap[i, j] = MapObject.Wall;
                 } else {
-                    level.objectMap[i].Add(MapObject.Floor);
+                    level.objectMap[i, j] = MapObject.Floor;
                 }
             }
         }
@@ -263,63 +265,62 @@ public sealed class CaveGenerator : IMapGenerator {
         this.MakeAutomatonSteps(level.objectMap, 4, 4, 10);
 
         for (int i = 0; i < level.height; i++) {
-            level.objectMap[i][0] = MapObject.Wall;
-            level.objectMap[i][level.width - 1] = MapObject.Wall;
+            level.objectMap[i, 0] = MapObject.Wall;
+            level.objectMap[i, level.width - 1] = MapObject.Wall;
         }
 
         for (int i = 0; i < level.width; i++) {
-            level.objectMap[0][i] = MapObject.Wall;
-            level.objectMap[level.height - 1][i] = MapObject.Wall;
+            level.objectMap[0, i] = MapObject.Wall;
+            level.objectMap[level.height - 1, i] = MapObject.Wall;
         }
 
         this.MakeConnectedCave(level);
     }
 
-    private void MakeAutomatonSteps(List<List<MapObject>> map, int deathLimit, int birthLimit, int stepsCount) {
+    private void MakeAutomatonSteps(MapObject[,] map, int deathLimit, int birthLimit, int stepsCount) {
         // Buffer init
-        var buffer = new List<List<MapObject>>();
-        for (int i = 0; i < map.Count; i++) {
-            buffer.Add(new List<MapObject>());
-            for (int j = 0; j < map[i].Count; j++) {
-                buffer[i].Add(MapObject.Floor);
+        var buffer = new MapObject[height, width];
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                buffer[i, j] = MapObject.Floor;
             }
         }
 
         for (int t = 0; t < stepsCount; t++) {
-            for (int i = 0; i < map.Count; i++) {
-                for (int j = 0; j < map[i].Count; j++) {
-                    if (i <= 1 || j <= 1 || i >= map.Count - 2 || j >= map[i].Count - 2) {
-                        buffer[i][j] = map[i][j];
+            for (int i = 0; i < height; i++) {
+                for (int j = 0; j < width; j++) {
+                    if (i <= 1 || j <= 1 || i >= height - 2 || j >= width - 2) {
+                        buffer[i, j] = map[i, j];
                         continue;
                     }
 
                     int neighbours = 0;
 
                     for (int k = 0; k < 8; k++) {
-                        if (map[i + Utility.Dy[k]][j + Utility.Dx[k]] == MapObject.Wall) {
+                        if (map[i + Utility.Dy[k], j + Utility.Dx[k]] == MapObject.Wall) {
                             neighbours++;
                         }
                     }
 
                     // If someone will make it simplier would it work as intended?
                     // Second condion with 't' is to prevent huge open spaces
-                    if (map[i][j] == MapObject.Wall) {
+                    if (map[i, j] == MapObject.Wall) {
                         if (neighbours >= deathLimit /*|| (neighbours == 0 && t < 3)*/) {
-                            buffer[i][j] = MapObject.Wall;
+                            buffer[i, j] = MapObject.Wall;
                         } else {
-                            buffer[i][j] = MapObject.Floor;
+                            buffer[i, j] = MapObject.Floor;
                         }
                     } else {
                         if (neighbours > birthLimit /*|| (neighbours == 0 && t < 3)*/) {
-                            buffer[i][j] = MapObject.Wall;
+                            buffer[i, j] = MapObject.Wall;
                         } else {
-                            buffer[i][j] = MapObject.Floor;
+                            buffer[i, j] = MapObject.Floor;
                         }
                     }
                 }
             }
 
-            Utility.Clone(buffer, map);
+            Utility.Clone(buffer, map, width, height);
         }
     }
 
@@ -333,7 +334,7 @@ public sealed class CaveGenerator : IMapGenerator {
     /// <param name="buffer"> Temporal matrix (should be initialized up to level map capacity). </param>
     /// <returns> Null if size is less than <paramref name="minCaveSize"/> else new Room. </returns>
     private Room FloodFill(int x, int y, int colour, int minCaveSize, List<List<int>> buffer, Level level) {
-        if (level.objectMap[y][x] == MapObject.Wall) {
+        if (level.objectMap[y, x] == MapObject.Wall) {
             return null;
         }
 
@@ -350,12 +351,12 @@ public sealed class CaveGenerator : IMapGenerator {
 
             for (int i = 1; i < 8; i += 2) {
                 if (Utility.RangeCheck(node.Item1 + Utility.Dy[i], 0, level.height - 1) && Utility.RangeCheck(node.Item2 + Utility.Dx[i], 0, level.width - 1)) {
-                    if ((level.objectMap[node.Item1 + Utility.Dy[i]][node.Item2 + Utility.Dx[i]] == MapObject.Floor
-                            || level.objectMap[node.Item1 + Utility.Dy[i]][node.Item2 + Utility.Dx[i]] == MapObject.Blockage)
+                    if ((level.objectMap[node.Item1 + Utility.Dy[i], node.Item2 + Utility.Dx[i]] == MapObject.Floor
+                            || level.objectMap[node.Item1 + Utility.Dy[i], node.Item2 + Utility.Dx[i]] == MapObject.Blockage)
                             && buffer[node.Item1 + Utility.Dy[i]][node.Item2 + Utility.Dx[i]] == -1) {
                         st.Enqueue(new Tuple<int, int>(node.Item1 + Utility.Dy[i], node.Item2 + Utility.Dx[i]));
                         buffer[node.Item1 + Utility.Dy[i]][node.Item2 + Utility.Dx[i]] = colour;
-                    } else if (level.objectMap[node.Item1 + Utility.Dy[i]][node.Item2 + Utility.Dx[i]] == MapObject.Wall && !isEdge) {
+                    } else if (level.objectMap[node.Item1 + Utility.Dy[i], node.Item2 + Utility.Dx[i]] == MapObject.Wall && !isEdge) {
                         isEdge = true;
                         edges.Add(new Vector2Int(node.Item2, node.Item1));
                     }
@@ -369,12 +370,12 @@ public sealed class CaveGenerator : IMapGenerator {
             while (st.Count > 0) {
                 Tuple<int, int> node = st.Dequeue();
                 buffer[node.Item1][node.Item2] = -1;
-                level.objectMap[node.Item1][node.Item2] = MapObject.Wall;
+                level.objectMap[node.Item1, node.Item2] = MapObject.Wall;
 
                 for (int i = 0; i < 4; i++) {
                     if (Utility.RangeCheck(node.Item1 + Utility.Dy[i], 0, level.height - 1) && Utility.RangeCheck(node.Item2 + Utility.Dx[i], 0, level.width - 1)) {
-                        if ((level.objectMap[node.Item1 + Utility.Dy[i]][node.Item2 + Utility.Dx[i]] == MapObject.Floor
-                                || level.objectMap[node.Item1 + Utility.Dy[i]][node.Item2 + Utility.Dx[i]] == MapObject.Blockage)
+                        if ((level.objectMap[node.Item1 + Utility.Dy[i], node.Item2 + Utility.Dx[i]] == MapObject.Floor
+                                || level.objectMap[node.Item1 + Utility.Dy[i], node.Item2 + Utility.Dx[i]] == MapObject.Blockage)
                                 && buffer[node.Item1 + Utility.Dy[i]][node.Item2 + Utility.Dx[i]] == colour) {
                             st.Enqueue(new Tuple<int, int>(node.Item1 + Utility.Dy[i], node.Item2 + Utility.Dx[i]));
                         }
@@ -408,7 +409,7 @@ public sealed class CaveGenerator : IMapGenerator {
 
         for (int i = 0; i < level.height; i++) {
             for (int j = 0; j < level.width; j++) {
-                if (level.objectMap[i][j] == MapObject.Floor && buffer[i][j] == -1) {
+                if (level.objectMap[i, j] == MapObject.Floor && buffer[i][j] == -1) {
                     Room newRoom = this.FloodFill(j, i, colour, minCaveSize, buffer, level);
                     if (newRoom != null) {
                         remRooms.Add(newRoom);
@@ -445,19 +446,19 @@ public sealed class CaveGenerator : IMapGenerator {
             if (curStep < 0.5) {
                 for (int j = minXTile.y - 1; j <= minXTile.y + 1; j++) {
                     if (Utility.RangeCheck(j, 0, level.height - 1)) {
-                        level.objectMap[j][i] = material;
+                        level.objectMap[j, i] = material;
                     }
                 }
             } else if (curStep < 0.75) {
                 for (int j = minXTile.y - 2; j <= minXTile.y + 1; j++) {
                     if (Utility.RangeCheck(j, 0, level.height - 1)) {
-                        level.objectMap[j][i] = material;
+                        level.objectMap[j, i] = material;
                     }
                 }
             } else {
                 for (int j = minXTile.y - 1; j <= minXTile.y + 2; j++) {
                     if (Utility.RangeCheck(j, 0, level.height - 1)) {
-                        level.objectMap[j][i] = material;
+                        level.objectMap[j, i] = material;
                     }
                 }
             }
@@ -468,31 +469,25 @@ public sealed class CaveGenerator : IMapGenerator {
             if (curStep < 0.5) {
                 for (int j = maxXTile.x - 1; j <= maxXTile.x + 1; j++) {
                     if (Utility.RangeCheck(j, 0, level.width - 1)) {
-                        level.objectMap[i][j] = material;
+                        level.objectMap[i, j] = material;
                     }
                 }
             } else if (curStep < 0.75) {
                 for (int j = maxXTile.x - 2; j <= maxXTile.x + 1; j++) {
                     if (Utility.RangeCheck(j, 0, level.width - 1)) {
-                        level.objectMap[i][j] = material;
+                        level.objectMap[i, j] = material;
                     }
                 }
             } else {
                 for (int j = maxXTile.x - 1; j <= maxXTile.x + 2; j++) {
                     if (Utility.RangeCheck(j, 0, level.width - 1)) {
-                        level.objectMap[i][j] = material;
+                        level.objectMap[i, j] = material;
                     }
                 }
             }
         }
 
-        level.objectMap[minXTile.y][maxXTile.x] = material;
-
-        ////for (int i = 0; i < 8; i++) {
-        ////    if (Utility.RangeCheck(minXTile.y + Utility.Dy[i], 0, level.height - 1) && Utility.RangeCheck(maxXTile.x + Utility.Dx[i], 0, level.width - 1)) {
-        ////        level.objectMap[minXTile.y + Utility.Dy[i]][maxXTile.x + Utility.Dx[i]] = material;
-        ////    }
-        ////}
+        level.objectMap[minXTile.y, maxXTile.x] = material;
     }
 
     /// <summary>

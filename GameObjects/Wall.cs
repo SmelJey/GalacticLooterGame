@@ -48,18 +48,18 @@ public class Wall : MonoBehaviour, IHittable {
         if (this.hp <= 0) {
             Vector2Int hitpoint = new Vector2Int(this.x + 1, this.y);
             if (Level.Walls.Contains(GameManager.instance.levelManager.currentLevel
-                .objectMap[this.y][this.x])) {
+                .objectMap[this.y, this.x])) {
                 hitpoint = new Vector2Int(this.x, this.y);
             } else if (Level.Walls.Contains(GameManager.instance.levelManager.currentLevel
-                .objectMap[this.y + 1][this.x])) {
+                .objectMap[this.y + 1, this.x])) {
                 hitpoint = new Vector2Int(this.x, this.y + 1);
             } else if (Level.Walls.Contains(GameManager.instance.levelManager.currentLevel
-                .objectMap[this.y + 1][this.x + 1])) {
+                .objectMap[this.y + 1, this.x + 1])) {
                 hitpoint = new Vector2Int(this.x + 1, this.y + 1);
             }
 
             if (!Level.Walls.Contains(GameManager.instance.levelManager.currentLevel
-                .objectMap[hitpoint.y][hitpoint.x])) {
+                .objectMap[hitpoint.y, hitpoint.x])) {
                 MonoBehaviour.Destroy(this.gameObject);
                 return;
             }
@@ -76,7 +76,7 @@ public class Wall : MonoBehaviour, IHittable {
             }
 
             GameManager.instance.levelManager.currentLevel
-                .objectMap[hitpoint.y][hitpoint.x] = MapObject.Floor;
+                .objectMap[hitpoint.y, hitpoint.x] = MapObject.Floor;
 
             for (int i = -1; i <= 1; i++) {
                 int[] codes = new int[4];
@@ -86,7 +86,7 @@ public class Wall : MonoBehaviour, IHittable {
                     }
 
                     GameManager.instance.levelManager.currentLevel.UpdateWallState(this.x + j, this.y + i);
-                    codes[j + 1] = GameManager.instance.levelManager.currentLevel.wallMap[this.y + i][this.x + j];
+                    codes[j + 1] = GameManager.instance.levelManager.currentLevel.wallMap[this.y + i, this.x + j];
                 }
             }
 
@@ -111,16 +111,16 @@ public class Wall : MonoBehaviour, IHittable {
             this.transform.Rotate(new Vector3(0, 0, -this.rotations[this.code]));
         }
 
-        this.code = level.wallMap[this.y][this.x];
+        this.code = level.wallMap[this.y, this.x];
 
         if (this.code == 0) {
             GameManager.instance.levelManager.currentLevel
-                .wallObjects[this.y][this.x] = null;
+                .wallObjects[this.y, this.x] = null;
             MonoBehaviour.Destroy(this.gameObject);
             return;
         }
 
-        this.spriteRenderer.sprite = Utility.SelectRandomItem(this.sprites[level.wallMap[this.y][this.x]]);
+        this.spriteRenderer.sprite = Utility.SelectRandomItem(this.sprites[level.wallMap[this.y, this.x]]);
 
         int bitnumber = 0;
         if ((this.code & 2) == 2) {
@@ -151,7 +151,7 @@ public class Wall : MonoBehaviour, IHittable {
 
         this.wallType = bitnumber;
         this.col.SetPath(0, this.colShapes[bitnumber]);
-        this.transform.Rotate(new Vector3(0, 0, this.rotations[level.wallMap[this.y][this.x]]));
+        this.transform.Rotate(new Vector3(0, 0, this.rotations[level.wallMap[this.y, this.x]]));
         if (this.maxHp >= 0) {
             this.damageObject.GetComponent<SpriteRenderer>().sprite = this.spriteHandler.GetDestructionSprites(this);
         }

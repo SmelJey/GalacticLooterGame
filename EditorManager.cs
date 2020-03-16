@@ -59,9 +59,9 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
         EditorManager.level = new Level(generator, 0);
 
         var reloading = SceneManager.LoadSceneAsync(3);
-        Debug.Log("Editor loading started");
+        GameLogger.LogMessage("Editor loading started", "EditorManager");
         reloading.completed += (asyncOperation) => {
-            Debug.Log("Editor loading complete");
+            GameLogger.LogMessage("Editor loading complete", "EditorManager");
             Time.timeScale = 1;
         };
     }
@@ -86,7 +86,7 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
                 file.Write(0);
             }
         } catch (System.Exception e) {
-            Debug.Log($"Unable to save file {e.Message}");
+            GameLogger.LogMessage($"Unable to save file {e.Message}", "EditorManager");
         }
     }
 
@@ -114,7 +114,7 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
             Camera.main.orthographicSize++;
         }
 
-        Debug.Log(Camera.main.orthographicSize);
+        GameLogger.LogMessage($"Camera size is {Camera.main.orthographicSize} ", "EditorManager");
     }
 
     public void SelectBrush(MapObject brushType) {
@@ -130,7 +130,7 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
         }
 
         this.selectedBrush = brushType;
-        Debug.Log($"Brush selected is {brushType}");
+        GameLogger.LogMessage($"Brush selected is {brushType}", "EditorManager");
     }
 
     /// <summary>
@@ -215,11 +215,13 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
 
         newButton.GetComponent<Image>().sprite = brushType.GetComponent<SpriteRenderer>().sprite;
         newButton.GetComponent<Image>().color = brushType.GetComponent<SpriteRenderer>().color;
+
         if (alias >= MapObject.PortalRed && alias <= MapObject.PortalYellow) {
             newButton.GetComponent<Image>().color = Portal.Colors[alias];
         }
 
         this.brushes.Add(alias, brushType);
+        GameLogger.LogMessage($"Brush {alias} added to {panel.name}", "EditorManager");
     }
 
     private void GenerateButtons() {
@@ -238,7 +240,7 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
             this.map.Add(new List<GridObject>());
 
             for (int j = 0; j < EditorManager.level.width; j++) {
-                var alias = EditorManager.level.objectMap[i][j];
+                var alias = EditorManager.level.objectMap[i, j];
 
                 this.InstantiateOnMap(alias, new Vector2(j, i), true);
             }
@@ -266,7 +268,6 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
         GameObject obj = Instantiate(this.dummy, pos, Quaternion.identity);
         obj.transform.SetParent(this.grid.transform);
 
-        Debug.Log(alias);
         obj.GetComponent<EditorDummy>().attachedObject = this.brushes[alias];
 
         if (alias >= MapObject.PortalRed && alias <= MapObject.PortalYellow) {
@@ -276,7 +277,7 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
             } else if (this.portalMap[alias].Item1 != null && this.portalMap[alias].Item2 == null) {
                 this.portalMap[alias].Item2 = obj;
             } else {
-                Debug.LogError($"Too many portals of color {alias}");
+                GameLogger.LogError($"Too many portals of color {alias}", "EditorManager");
                 return null;
             }
         }
@@ -330,7 +331,7 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
                     // Delete already existing portals of this color.
                     if (this.selectedBrush >= MapObject.PortalRed && this.selectedBrush <= MapObject.PortalYellow
                             && this.portalMap[this.selectedBrush].Item2 != null) {
-                        Debug.Log($"Erasement started on {pos} of  {this.selectedBrush}");
+                        GameLogger.LogMessage($"Erasement started on {pos} of  {this.selectedBrush}", "EditorManager");
                         portals.Add(this.portalMap[this.selectedBrush].Item1);
                         portals.Add(this.portalMap[this.selectedBrush].Item2);
                         this.portalMap[this.selectedBrush].Item1 = null;
@@ -339,7 +340,7 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
 
                     // Delete portal which is paired with portal on coordinates pox.x and pos.y.
                     if (this.portalMap.ContainsKey(this.map[(int)pos.y][(int)pos.x].alias)) {
-                        Debug.Log($"Erasement started on {pos} of  {this.map[(int)pos.y][(int)pos.x].alias}");
+                        GameLogger.LogMessage($"Erasement started on {pos} of  {this.map[(int)pos.y][(int)pos.x].alias}", "EditorManager");
                         portals.Add(this.portalMap[this.map[(int)pos.y][(int)pos.x].alias].Item1);
                         portals.Add(this.portalMap[this.map[(int)pos.y][(int)pos.x].alias].Item2);
                         this.portalMap[this.map[(int)pos.y][(int)pos.x].alias].Item1 = null;
@@ -356,7 +357,7 @@ public class EditorManager : MonoBehaviour, EditorInput.IEditorActions {
                     }
                 }
 
-                Debug.Log($"Instantiate on {pos} of {this.selectedBrush}");
+                GameLogger.LogMessage($"Instantiating on {pos} of {this.selectedBrush}", "EditorManager");
                 this.InstantiateOnMap(this.selectedBrush, pos);
 
                 if (this.map[(int)pos.y][(int)pos.x].alias == MapObject.Player) {

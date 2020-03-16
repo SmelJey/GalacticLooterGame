@@ -14,7 +14,6 @@ public class Hitbox : MonoBehaviour {
         this.boxCollider = this.GetComponent<BoxCollider2D>();
         this.boxCollider.size = new Vector2(range, size);
         this.checkTag = tag;
-        Debug.Log(this.boxCollider.size);
     }
 
     private void Start() {

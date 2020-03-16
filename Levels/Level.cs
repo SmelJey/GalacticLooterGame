@@ -15,12 +15,16 @@ public class Level {
 
     public IMapGenerator generator;
 
+    public GameObject boss = null;
+    public int oreMined = 0;
+    public int enemiesKilled = 0;
+
     // For wall processing
-    public List<List<char>> wallMap;
-    public List<List<GameObject>> wallObjects;
+    public char[,] wallMap;
+    public GameObject[,] wallObjects;
 
     // For object placing (maybe better use list of objects?)
-    public List<List<MapObject>> objectMap;
+    public MapObject[,] objectMap;
 
     // Assets for every char in matching map
     public Dictionary<MapObject, GameObject> wallAssets;
@@ -50,7 +54,7 @@ public class Level {
     public Level(IMapGenerator mapGenerator, int difficulty) {
         this.generator = mapGenerator;
         this.difficulty = difficulty;
-        Debug.Log($"Current difficulty {difficulty} {this.difficulty}");
+        GameLogger.LogMessage($"Current difficulty {difficulty} {this.difficulty}", "Level");
         this.LevelSetup();
     }
 
@@ -129,7 +133,7 @@ public class Level {
             for (int t = 1; t < 8; t += 2) {
                 var checkNode = new Vector2Int(node.x + Utility.Dx[t], node.y + Utility.Dy[t]);
 
-                if (backtrack.ContainsKey(checkNode) || Level.Walls.Contains(this.objectMap[checkNode.y][checkNode.x])) {
+                if (backtrack.ContainsKey(checkNode) || Level.Walls.Contains(this.objectMap[checkNode.y, checkNode.x])) {
                     continue;
                 }
 
@@ -140,12 +144,12 @@ public class Level {
             for (int t = 0; t < 8; t += 2) {
                 var checkNode = new Vector2Int(node.x + Utility.Dx[t], node.y + Utility.Dy[t]);
 
-                if (backtrack.ContainsKey(checkNode) || Level.Walls.Contains(this.objectMap[checkNode.y][checkNode.x])) {
+                if (backtrack.ContainsKey(checkNode) || Level.Walls.Contains(this.objectMap[checkNode.y, checkNode.x])) {
                     continue;
                 }
 
-                if ((!Level.Walls.Contains(this.objectMap[node.y + Utility.Dy[t]][node.x]))
-                    || (!Level.Walls.Contains(this.objectMap[node.y][node.x + Utility.Dx[t]]))) {
+                if ((!Level.Walls.Contains(this.objectMap[node.y + Utility.Dy[t], node.x]))
+                    || (!Level.Walls.Contains(this.objectMap[node.y, node.x + Utility.Dx[t]]))) {
                     q.Enqueue(checkNode);
                     backtrack.Add(checkNode, node);
                 }
@@ -172,7 +176,7 @@ public class Level {
     /// <param name="alias"> Key in wallAssets dictionary. </param>
     public void AddWallAsset(GameObject arr, MapObject alias) {
         if (arr == null) {
-            Debug.LogError($"LevelManager: Asset: {alias} is not set yet");
+            GameLogger.LogError($"LevelManager: Asset: {alias} is not set yet", "Level");
             return;
         }
 
@@ -186,7 +190,7 @@ public class Level {
     /// <param name="alias"> Key in objectAssets dictionary. </param>
     public void AddObjectAsset(GameObject[] arr, MapObject alias) {
         if (arr == null || arr.Length == 0) {
-            Debug.LogError($"LevelManager: Asset: {alias} is not set yet");
+            GameLogger.LogError($"LevelManager: Asset: {alias} is not set yet", "Level");
             return;
         }
 
@@ -204,7 +208,7 @@ public class Level {
     /// <param name="alias"> Key in floorAssets dictionary. </param>
     public void AddFloorAsset(GameObject[] arr, MapObject alias) {
         if (arr == null || arr.Length == 0) {
-            Debug.LogError($"LevelManager: Asset: {alias} is not set yet");
+            GameLogger.LogError($"LevelManager: Asset: {alias} is not set yet", "Level");
             return;
         }
 
@@ -217,34 +221,35 @@ public class Level {
 
     public void UpdateWallState(int x, int y) {
         int wallCode = 0;
-        if (Walls.Contains(this.objectMap[y][x])) {
+        if (Walls.Contains(this.objectMap[y, x])) {
             wallCode += 8;
         }
 
-        if (Walls.Contains(this.objectMap[y][x + 1])) {
+        if (Walls.Contains(this.objectMap[y, x + 1])) {
             wallCode += 4;
         }
 
-        if (Walls.Contains(this.objectMap[y + 1][x + 1])) {
+        if (Walls.Contains(this.objectMap[y + 1, x + 1])) {
             wallCode += 2;
         }
 
-        if (Walls.Contains(this.objectMap[y + 1][x])) {
+        if (Walls.Contains(this.objectMap[y + 1, x])) {
             wallCode += 1;
         }
 
-        this.wallMap[y][x] = (char)wallCode;
+        this.wallMap[y, x] = (char)wallCode;
 
-        if (this.wallObjects[y][x] != null) {
-            this.wallObjects[y][x].GetComponent<Wall>().UpdateSprite(this);
+        if (this.wallObjects[y, x] != null) {
+            this.wallObjects[y, x].GetComponent<Wall>().UpdateSprite(this);
         }
     }
 
     private void LevelSetup() {
+        GameLogger.LogMessage("Level setup called", "Level");
         this.generator.GenerateLevel(this);
         this.generator.SetPlayerPosition(this);
         this.generator.SetExitPosition(this);
-        this.generator.PlaceOre(this, new MapObject[] { MapObject.GoldOre, MapObject.HealOre }, new int[] { 100, 25 }, new float[] { 0.25f, 0.1f });
+        this.generator.PlaceOre(this, new MapObject[] { MapObject.GoldOre, MapObject.HealOre }, new int[] { 50, 20 }, new float[] { 0.25f, 0.1f });
         this.WallProc();
         this.FindObjects();
 
@@ -284,7 +289,7 @@ public class Level {
             }
         }
 
-        Debug.Log($"Fighters: {fightersCount} Suiciders: {suicidersCount} Bombers: {bombersCount}, Difficulty: {this.difficulty}");
+        GameLogger.LogMessage($"Fighters: {fightersCount} Suiciders: {suicidersCount} Bombers: {bombersCount}, Difficulty: {this.difficulty}", "Level");
         this.generator.PlaceSpawners(this, new MapObject[] { MapObject.EnemyFighterSpawner, MapObject.EnemySuiciderSpawner, MapObject.EnemyBomberSpawner }, new int[] { fightersCount, suicidersCount, bombersCount });
 
         this.AssetsInit();
@@ -296,11 +301,11 @@ public class Level {
     private void FindObjects() {
         for (int i = 0; i < this.height; i++) {
             for (int j = 0; j < this.width; j++) {
-                if (this.objectMap[i][j] == MapObject.Player) {
-                    this.objectMap[i][j] = MapObject.Floor;
+                if (this.objectMap[i, j] == MapObject.Player) {
+                    this.objectMap[i, j] = MapObject.Floor;
                     this.playerStart = new Vector2(j, i);
-                } else if (this.objectMap[i][j] == MapObject.Exit) {
-                    this.objectMap[i][j] = MapObject.Floor;
+                } else if (this.objectMap[i, j] == MapObject.Exit) {
+                    this.objectMap[i, j] = MapObject.Floor;
                     this.exitPos = new Vector2(j, i);
                 }
             }
@@ -311,14 +316,12 @@ public class Level {
     /// Initialize wallMap and make internal representation of walls.
     /// </summary>
     private void WallProc() {
-        this.wallMap = new List<List<char>>();
-        this.wallObjects = new List<List<GameObject>>();
+        this.wallMap = new char[height, width];
+        this.wallObjects = new GameObject[height, width];
         for (int i = 0; i < this.height - 1; i++) {
-            this.wallMap.Add(new List<char>());
-            this.wallObjects.Add(new List<GameObject>());
             for (int j = 0; j < this.width - 1; j++) {
-                this.wallMap[i].Add((char)0);
-                this.wallObjects[i].Add(null);
+                this.wallMap[i, j] = (char)0;
+                this.wallObjects[i, j] = null;
                 this.UpdateWallState(j, i);
             }
         }

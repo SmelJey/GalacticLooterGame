@@ -15,6 +15,8 @@ public class UpgradeShop : MonoBehaviour {
     }
 
     private void SetupShop() {
+        GameLogger.LogMessage("Shop setup", "UpgradeShop");
+
         var upgradesIt = GameManager.instance.upgradeManager.availableUpgrades.GetEnumerator();
         for (int i = 0; i < this.buttons.Length; i++) {
             if (!upgradesIt.MoveNext()) {
@@ -32,6 +34,8 @@ public class UpgradeShop : MonoBehaviour {
                 GameManager.instance.upgradeManager.TryToBuy(key);
                 this.SetupShop();
             });
+
+            GameLogger.LogMessage($"Item in UpgradeShop on {i} position is {key}", "UpgradeShop");
 
             this.buttons[i].GetComponentInChildren<Text>(true).text = $"{upgradesIt.Current.Value.Name}\r\nCost: {upgradesIt.Current.Value.Cost}";
         }

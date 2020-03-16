@@ -17,7 +17,7 @@ public static class Utility {
     /// </summary>
     public static readonly int[] Dy = { -1, -1, -1, 0, 1, 1, 1, 0 };
 
-    public static readonly string Version = "TEST BUILD v0.1.2";
+    public static readonly string Version = "TEST BUILD v0.1.3";
 
     public static string levelDirectory = Application.dataPath + "/";
 
@@ -50,15 +50,11 @@ public static class Utility {
     /// <param name="from"> Original matrix. </param>
     /// <param name="to"> Copy. </param>
     /// <typeparam name="T"> Type of matrix cell. </typeparam>
-    public static void Clone<T>(List<List<T>> from, List<List<T>> to)
+    public static void Clone<T>(T[,] from, T[,] to, int width, int height)
         where T : struct {
-        if (from.Count > to.Count) {
-            throw new Exception("'to' capacity is less that 'from'");
-        }
-
-        for (int i = 0; i < from.Count; i++) {
-            for (int j = 0; j < from[i].Count; j++) {
-                to[i][j] = from[i][j];
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                to[i, j] = from[i, j];
             }
         }
     }
@@ -68,19 +64,19 @@ public static class Utility {
     /// </summary>
     /// <param name="matrix"> Matrix to print. </param>
     /// <typeparam name="T"> Type of matrix cell. </typeparam>
-    public static void PrintMatrix<T>(List<List<T>> matrix)
+    public static void PrintMatrix<T>(T[,] matrix, int width, int height)
         where T : struct {
-        Debug.Log("=========================");
-        for (int i = 0; i < matrix.Count; i++) {
+        GameLogger.LogMessage("=========================", "MatrixPrint");
+        for (int i = 0; i < height; i++) {
             string buffer = string.Empty;
-            for (int j = 0; j < matrix[i].Count; j++) {
-                buffer += matrix[i][j];
+            for (int j = 0; j < width; j++) {
+                buffer += Convert.ToInt32(matrix[i, j]);
             }
 
-            Debug.Log(buffer);
+            GameLogger.LogMessage(buffer, "MatrixPrint");
         }
 
-        Debug.Log("=========================");
+        GameLogger.LogMessage("=========================", "MatrixPrint");
     }
 
     /// <summary>

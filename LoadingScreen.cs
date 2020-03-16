@@ -11,39 +11,45 @@ public class LoadingScreen : MonoBehaviour {
     public Slider progressBar;
     public Text levelStartButton;
 
-    private static int curPlayerMoney = -1;
-    private static int curPlayerHp = -1;
+    private static Player playerStorage = null;
+
+    private static bool needPlayerCopy = false;
 
     public static void StartLoading() {
+        GameLogger.LogMessage("Start loading screen", "LoadingScreen");
         Time.timeScale = 0;
+        LoadingScreen.needPlayerCopy = false;
 
         if (GameManager.instance != null) {
-            curPlayerMoney = GameManager.instance.playerInstance.money;
-            curPlayerHp = GameManager.instance.playerInstance.hp;
+            LoadingScreen.needPlayerCopy = true;
+            LoadingScreen.playerStorage = GameManager.instance.playerInstance;
             GameManager.instance.gameState = GameState.NOT_LOADED;
         } else {
-            curPlayerHp = -1;
-            curPlayerMoney = 0;
+            LoadingScreen.playerStorage = null;
         }
+
+        GameLogger.LogMessage($"Save player data: {LoadingScreen.needPlayerCopy}", "LoadingScreen");
 
         SceneManager.LoadSceneAsync(1, LoadSceneMode.Additive);
 
-        Debug.Log("Reload started");
+        GameLogger.LogMessage("Reload started", "LoadingScreen");
     }
 
     private IEnumerator Start() {
+        GameLogger.LogMessage("Loading Screen Startup", "LoadingScreen");
         yield return null;
         AsyncOperation loading = SceneManager.LoadSceneAsync(2);
 
         loading.completed += (asyncOperation) => {
-            Debug.Log($"Reload complete {GameManager.instance.currentLevelNumber}");
+            GameLogger.LogMessage($"Reload of level {GameManager.instance.currentLevelNumber} complete", "LoadingScreen");
             GameManager.instance.Awake();
-            GameManager.instance.playerInstance.money = curPlayerMoney;
-            GameManager.instance.playerInstance.hp = curPlayerHp;
+
+            if (LoadingScreen.needPlayerCopy) {
+                GameManager.instance.playerInstance.CloneStats(LoadingScreen.playerStorage);
+            }
         };
 
         while (!loading.isDone) {
-            Debug.Log(loading.progress);
             if (loading.progress < 0.9f) {
                 float progress = Mathf.Clamp01(loading.progress / 0.9f);
                 this.progressBar.value = progress;
